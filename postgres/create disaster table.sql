@@ -36,6 +36,8 @@ UPDATE temp_aemkh_disasters
                      else start_date
                    end;
 
+UPDATE temp_aemkh_disasters SET regions = 'AUS' where length(regions) > 21;
+
 
 DROP TABLE IF EXISTS aemkh_disasters;
 
