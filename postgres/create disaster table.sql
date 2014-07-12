@@ -118,7 +118,7 @@ update aemkh_disasters set severity = COALESCE(insured_cost, 0::money) + COALESC
 --select * from aemkh_disasters where (deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0))) order by insured_cost desc;
 --select * from aemkh_disasters order by severity desc; -- 344
 
-COPY temp_aemkh_disasters TO 'C:\minus34\GitHub\Project-Doom\data/doom_stats.csv' HEADER CSV;
+COPY aemkh_disasters TO 'C:\minus34\GitHub\Project-Doom\hstestcode/doom_stats.csv' HEADER CSV;
 
 
 -- 

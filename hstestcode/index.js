@@ -114,6 +114,15 @@ function init() {
     //Add the tiled map layer to the map
     map.addLayer(tiles);
     
+	var theDots = omnivore.csv('doom_stats.csv', {
+		latfield: 'lat',
+		lonfield: 'long',
+		delimiter: ','
+	});
+	
+	map.addLayer(theDots);
+
+	
     // //Change the start zoom and font size based on window size
     // var windowWidth = $(window).width();
     // var windowHeight = $(window).height();
