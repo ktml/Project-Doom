@@ -101,7 +101,7 @@ select id
 from temp_aemkh_disasters
 where regions != 'Outside Australia'
 and type not in ('Wartime', 'Maritime', 'Epidemic')
-and sub_type != 'Drought'
+and sub_type not in ('Drought', 'Criminal')
 and id not in (29, 46, 105, 513, 545, 250)
 and (
   (type <> 'Natural' and deaths > 5)
@@ -135,13 +135,13 @@ COPY temp_aemkh_disasters TO 'C:\minus34\GitHub\Project-Doom\data/doom_stats.csv
 
 
 
-SELECT Count(*), type
+SELECT Count(*), type, SUM(deaths) as deaths
   FROM aemkh_disasters
   group by type;
 
-56;"Transport"
-36;"Man made"
-252;"Natural"
+56;"Transport";940
+32;"Man made";658
+252;"Natural";5313
 
 
 SELECT Count(*), type, SUM(deaths) as deaths, sub_type
@@ -149,7 +149,6 @@ SELECT Count(*), type, SUM(deaths) as deaths, sub_type
   group by type, sub_type
   order by type, sub_type;
 
-4;"Man made";66;"Criminal"
 12;"Man made";148;"Fire"
 20;"Man made";510;"Industrial"
 55;"Natural";680;"Bushfire"
@@ -166,4 +165,5 @@ SELECT Count(*), type, SUM(deaths) as deaths, sub_type
 3;"Transport";116;"Water"
 
 
+select * from aemkh_disasters where sub_type = 'Criminal';
 
