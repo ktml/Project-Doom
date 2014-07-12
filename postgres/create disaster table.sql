@@ -149,20 +149,22 @@ SELECT Count(*), type, SUM(deaths) as deaths, sub_type
   group by type, sub_type
   order by type, sub_type;
 
-12;"Man made";148;"Fire"
-20;"Man made";510;"Industrial"
-55;"Natural";680;"Bushfire"
-34;"Natural";951;"Cyclone"
-3;"Natural";13;"Earthquake"
-70;"Natural";615;"Flood"
-17;"Natural";2887;"Heatwave"
-4;"Natural";38;"Landslide"
-1;"Natural";5;"Riptide"
-68;"Natural";124;"Storm/Hail"
-21;"Transport";327;"Air"
-24;"Transport";371;"Rail"
-8;"Transport";126;"Road"
-3;"Transport";116;"Water"
+
+Count, type, deaths, sub_type
+12;Man made;148;Fire
+20;Man made;510;Industrial
+55;Natural;680;Bushfire
+34;Natural;951;Cyclone
+3;Natural;13;Earthquake
+70;Natural;615;Flood
+17;Natural;2887;Heatwave
+4;Natural;38;Landslide
+1;Natural;5;Riptide
+68;Natural;124;Storm/Hail
+21;Transport;327;Air
+24;Transport;371;Rail
+8;Transport;126;Road
+3;Transport;116;Water
 
 
 select * from aemkh_disasters where sub_type = 'Criminal';
