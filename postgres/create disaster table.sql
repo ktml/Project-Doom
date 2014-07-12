@@ -28,13 +28,23 @@ ALTER TABLE temp_aemkh_disasters OWNER TO postgres;
 ----Default is MDY
 --set datestyle = 'ISO, MDY';
 
-COPY temp_aemkh_disasters FROM 'C:\minus34\govhack2014\data/aemkh_disaster_event_extract_classified_Postgres_Input.csv' HEADER QUOTE '"' CSV;
+COPY temp_aemkh_disasters FROM 'C:\minus34\GitHub\Project-Doom\data/aemkh_disaster_event_extract_classified_Postgres_Input.csv' HEADER QUOTE '"' CSV;
 
 UPDATE temp_aemkh_disasters
   SET start_date = case
                      when position(' ' in start_date) > 0 then left(start_date, position(' ' in start_date) - 1)
                      else start_date
                    end;
+
+UPDATE temp_aemkh_disasters SET regions = 'AUS' where length(regions) > 21;
+
+UPDATE temp_aemkh_disasters SET evacuated = null where evacuated = 0 ; -- 3
+UPDATE temp_aemkh_disasters SET homeless = null where homeless = 0 ; -- 0
+UPDATE temp_aemkh_disasters SET injuries = null where injuries = 0 ; -- 3
+UPDATE temp_aemkh_disasters SET deaths = null where deaths = 0 ; -- 0
+--UPDATE temp_aemkh_disasters SET insured_cost = null where insured_cost = 0 ;
+UPDATE temp_aemkh_disasters SET homes_damaged = null where homes_damaged = 0 ; -- 1
+UPDATE temp_aemkh_disasters SET homes_destroyed = null where homes_destroyed = 0 ; -- 0
 
 
 DROP TABLE IF EXISTS aemkh_disasters;
@@ -58,7 +68,9 @@ CREATE TABLE aemkh_disasters
   homes_destroyed integer NULL,
   regions character varying(50) NOT NULL,
   url character varying(255) NOT NULL,
-  geom geometry (POINT, 4326, 2),
+  severity money NOT NULL,
+  cost_2011 money NOT NULL,
+  --geom geometry (POINT, 4326, 2),
   CONSTRAINT aemkh_disasters_pkey PRIMARY KEY (id)
 )
 WITH (OIDS=FALSE);
@@ -83,14 +95,75 @@ select id
       ,homes_destroyed
       ,regions
       ,url
-      ,ST_SetSRID(ST_MakePoint(long, lat), 4326)
+      ,0
+      ,0
+      --,ST_SetSRID(ST_MakePoint(long, lat), 4326)
 from temp_aemkh_disasters
 where regions != 'Outside Australia'
-and type not in ('Wartime', 'Maritime')
+and type not in ('Wartime', 'Maritime', 'Epidemic')
 and sub_type != 'Drought'
-and id not in (29, 46, 105, 513, 545);
+and id not in (29, 46, 105, 513, 545, 250)
+and (
+  (type <> 'Natural' and deaths > 5)
+  or
+  type = 'Natural'
+)
+and (deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0)));
+
+
+update aemkh_disasters set sub_type = 'Storm/Hail' where sub_type IN ('Severe Storm', 'Hail', 'Tornado');
+update aemkh_disasters set sub_type = 'Rail' where sub_type = 'Road/rail';
+update aemkh_disasters set severity = COALESCE(insured_cost, 0::money) + COALESCE(deaths, 0) * 4000000::money + COALESCE(injuries, 0) * 500000::money + COALESCE(homeless, 0) * 100000::money + COALESCE(evacuated, 0) * 100000::money;
+
+--select * from aemkh_disasters where (deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0))) order by insured_cost desc;
+--select * from aemkh_disasters order by severity desc; -- 344
+
+COPY temp_aemkh_disasters TO 'C:\minus34\GitHub\Project-Doom\data/doom_stats.csv' HEADER CSV;
+
+
+-- 
+-- select * from aemkh_disasters where regions = 'AUS'
+-- 
+-- 
+-- select * from aemkh_disasters where evacuated IS NOT NULL order by evacuated desc; -- 101 min
+-- select * from aemkh_disasters where homeless IS NOT NULL order by homeless desc; -- 101 min
+-- select * from aemkh_disasters where injuries IS NOT NULL order by injuries desc;
+-- --select * from aemkh_disasters where deaths IS NOT NULL order by deaths desc;
+-- select * from aemkh_disasters where insured_cost IS NOT NULL order by insured_cost desc;
+-- select * from aemkh_disasters where homes_damaged IS NOT NULL order by homes_damaged desc;
+-- select * from aemkh_disasters where homes_destroyed IS NOT NULL order by homes_destroyed desc;
 
 
 
-select id, regions, length(regions), * from aemkh_disasters order by length(regions) desc;
+SELECT Count(*), type
+  FROM aemkh_disasters
+  group by type;
+
+56;"Transport"
+36;"Man made"
+252;"Natural"
+
+
+SELECT Count(*), type, SUM(deaths) as deaths, sub_type
+  FROM aemkh_disasters
+  group by type, sub_type
+  order by type, sub_type;
+
+4;"Man made";66;"Criminal"
+12;"Man made";148;"Fire"
+20;"Man made";510;"Industrial"
+55;"Natural";680;"Bushfire"
+34;"Natural";951;"Cyclone"
+3;"Natural";13;"Earthquake"
+70;"Natural";615;"Flood"
+17;"Natural";2887;"Heatwave"
+4;"Natural";38;"Landslide"
+1;"Natural";5;"Riptide"
+68;"Natural";124;"Storm/Hail"
+21;"Transport";327;"Air"
+24;"Transport";371;"Rail"
+8;"Transport";126;"Road"
+3;"Transport";116;"Water"
+
+
 
