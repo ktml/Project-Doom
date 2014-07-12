@@ -109,21 +109,24 @@ and (
 --select id, regions, length(regions), * from aemkh_disasters order by length(regions) desc;
 
 
-select * from aemkh_disasters;
+select * from aemkh_disasters; -- 362
 
 
+select * from aemkh_disasters where deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0)) order by insured_cost desc;
 
 
-select * from aemkh_disasters where evacuated IS NOT NULL order by evacuated desc; -- 101 min
-select * from aemkh_disasters where homeless IS NOT NULL order by homeless desc; -- 101 min
-select * from aemkh_disasters where injuries IS NOT NULL order by injuries desc;
---select * from aemkh_disasters where deaths IS NOT NULL order by deaths desc;
-select * from aemkh_disasters where insured_cost IS NOT NULL order by insured_cost desc;
-select * from aemkh_disasters where homes_damaged IS NOT NULL order by homes_damaged desc;
-select * from aemkh_disasters where homes_destroyed IS NOT NULL order by homes_destroyed desc;
+-- 
+-- select * from aemkh_disasters where regions = 'AUS'
+-- 
+-- 
+-- select * from aemkh_disasters where evacuated IS NOT NULL order by evacuated desc; -- 101 min
+-- select * from aemkh_disasters where homeless IS NOT NULL order by homeless desc; -- 101 min
+-- select * from aemkh_disasters where injuries IS NOT NULL order by injuries desc;
+-- --select * from aemkh_disasters where deaths IS NOT NULL order by deaths desc;
+-- select * from aemkh_disasters where insured_cost IS NOT NULL order by insured_cost desc;
+-- select * from aemkh_disasters where homes_damaged IS NOT NULL order by homes_damaged desc;
+-- select * from aemkh_disasters where homes_destroyed IS NOT NULL order by homes_destroyed desc;
 
-
-select * from temp_aemkh_disasters where type = 'Epidemic';
 
 
 SELECT Count(*), type
@@ -135,7 +138,7 @@ SELECT Count(*), type
 270;"Natural"
 
 
-SELECT Count(*), type, sub_type
+SELECT Count(*), type, SUM(deaths) as deaths, sub_type
   FROM aemkh_disasters
   group by type, sub_type
   order by type, sub_type;
