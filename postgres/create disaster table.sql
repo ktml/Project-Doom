@@ -28,7 +28,7 @@ ALTER TABLE temp_aemkh_disasters OWNER TO postgres;
 ----Default is MDY
 --set datestyle = 'ISO, MDY';
 
-COPY temp_aemkh_disasters FROM 'C:\minus34\govhack2014\data/aemkh_disaster_event_extract_classified_Postgres_Input.csv' HEADER QUOTE '"' CSV;
+COPY temp_aemkh_disasters FROM 'C:\minus34\GitHub\Project-Doom\data/aemkh_disaster_event_extract_classified_Postgres_Input.csv' HEADER QUOTE '"' CSV;
 
 UPDATE temp_aemkh_disasters
   SET start_date = case
@@ -68,7 +68,9 @@ CREATE TABLE aemkh_disasters
   homes_destroyed integer NULL,
   regions character varying(50) NOT NULL,
   url character varying(255) NOT NULL,
-  geom geometry (POINT, 4326, 2),
+  severity money NOT NULL,
+  cost_2011 money NOT NULL,
+  --geom geometry (POINT, 4326, 2),
   CONSTRAINT aemkh_disasters_pkey PRIMARY KEY (id)
 )
 WITH (OIDS=FALSE);
@@ -93,7 +95,9 @@ select id
       ,homes_destroyed
       ,regions
       ,url
-      ,ST_SetSRID(ST_MakePoint(long, lat), 4326)
+      ,0
+      ,0
+      --,ST_SetSRID(ST_MakePoint(long, lat), 4326)
 from temp_aemkh_disasters
 where regions != 'Outside Australia'
 and type not in ('Wartime', 'Maritime', 'Epidemic')
@@ -103,16 +107,18 @@ and (
   (type <> 'Natural' and deaths > 5)
   or
   type = 'Natural'
-);
+)
+and (deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0)));
 
 
---select id, regions, length(regions), * from aemkh_disasters order by length(regions) desc;
+update aemkh_disasters set sub_type = 'Storm/Hail' where sub_type IN ('Severe Storm', 'Hail', 'Tornado');
+update aemkh_disasters set sub_type = 'Rail' where sub_type = 'Road/rail';
+update aemkh_disasters set severity = COALESCE(insured_cost, 0::money) + COALESCE(deaths, 0) * 4000000::money + COALESCE(injuries, 0) * 500000::money + COALESCE(homeless, 0) * 100000::money + COALESCE(evacuated, 0) * 100000::money;
 
+--select * from aemkh_disasters where (deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0))) order by insured_cost desc;
+--select * from aemkh_disasters order by severity desc; -- 344
 
-select * from aemkh_disasters; -- 362
-
-
-select * from aemkh_disasters where deaths > 0 or (COALESCE(deaths, 0) = 0 and (COALESCE(injuries, 0) > 100 or COALESCE(insured_cost::numeric(11,0), 0) > 0)) order by insured_cost desc;
+COPY temp_aemkh_disasters TO 'C:\minus34\GitHub\Project-Doom\data/doom_stats.csv' HEADER CSV;
 
 
 -- 
@@ -135,7 +141,7 @@ SELECT Count(*), type
 
 56;"Transport"
 36;"Man made"
-270;"Natural"
+252;"Natural"
 
 
 SELECT Count(*), type, SUM(deaths) as deaths, sub_type
@@ -143,22 +149,21 @@ SELECT Count(*), type, SUM(deaths) as deaths, sub_type
   group by type, sub_type
   order by type, sub_type;
 
+4;"Man made";66;"Criminal"
+12;"Man made";148;"Fire"
+20;"Man made";510;"Industrial"
+55;"Natural";680;"Bushfire"
+34;"Natural";951;"Cyclone"
+3;"Natural";13;"Earthquake"
+70;"Natural";615;"Flood"
+17;"Natural";2887;"Heatwave"
+4;"Natural";38;"Landslide"
+1;"Natural";5;"Riptide"
+68;"Natural";124;"Storm/Hail"
+21;"Transport";327;"Air"
+24;"Transport";371;"Rail"
+8;"Transport";126;"Road"
+3;"Transport";116;"Water"
 
-4;"Man made";"Criminal"
-12;"Man made";"Fire"
-20;"Man made";"Industrial"
-58;"Natural";"Bushfire"
-35;"Natural";"Cyclone"
-6;"Natural";"Earthquake"
-76;"Natural";"Flood"
-21;"Natural";"Hail"
-19;"Natural";"Heatwave"
-4;"Natural";"Landslide"
-1;"Natural";"Riptide"
-47;"Natural";"Severe Storm"
-3;"Natural";"Tornado"
-21;"Transport";"Air"
-19;"Transport";"Rail"
-8;"Transport";"Road"
-5;"Transport";"Road/rail"
-3;"Transport";"Water"
+
+
